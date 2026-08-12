@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>競賽評分系統</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card2: #273449;
+      --accent: #38bdf8;
+      --accent2: #22c55e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #334155;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+      background: linear-gradient(160deg, #0f172a, #111c34);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+    .wrap { max-width: 560px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 22px; }
+    header h1 { font-size: 24px; margin: 0 0 6px; }
+    header p { color: var(--muted); margin: 0; font-size: 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    label { display: block; font-size: 14px; margin-bottom: 6px; color: var(--muted); font-weight: 600; }
+    select, textarea, input {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+    select:focus, textarea:focus { border-color: var(--accent); }
+    .field { margin-bottom: 18px; }
+    textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+    .score-block { margin-bottom: 18px; }
+    .score-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .score-head .name { font-weight: 600; font-size: 15px; color: var(--text); }
+    .score-head .val {
+      font-weight: 700; font-size: 20px; color: var(--accent);
+      background: var(--card2); border-radius: 8px; padding: 2px 12px; min-width: 46px; text-align: center;
+    }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      height: 8px; padding: 0; border-radius: 8px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #fff; border: 3px solid var(--accent);
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #fff; border: 3px solid var(--accent);
+    }
+    .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 4px; }
+    button {
+      width: 100%; margin-top: 6px;
+      background: linear-gradient(90deg, var(--accent), #0ea5e9);
+      color: #04121f; border: none; border-radius: 12px;
+      padding: 15px; font-size: 17px; font-weight: 700; cursor: pointer;
+      transition: transform .05s ease, opacity .2s;
+    }
+    button:hover { opacity: .92; }
+    button:active { transform: scale(.99); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+      background: var(--accent2); color: #04210f; padding: 14px 26px; border-radius: 12px;
+      font-weight: 700; opacity: 0; pointer-events: none; transition: all .3s; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      z-index: 50; max-width: 90vw; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--danger); color: #fff; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .divider { height: 1px; background: var(--border); margin: 6px 0 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🏆 競賽評分系統</h1>
+      <p>請評審填寫每位參賽者的分數</p>
+    </header>
+
+    <form id="scoreForm" class="card" autocomplete="off">
+      <div class="field">
+        <label for="judge">評審姓名</label>
+        <select id="judge" required>
+          <option value="" disabled selected>請選擇你的名字</option>
+        </select>
+        <div class="hint">選好後系統會記住，下次不用重選</div>
+      </div>
+
+      <div class="field">
+        <label for="contestant">參賽者</label>
+        <select id="contestant" required>
+          <option value="" disabled selected>請選擇參賽者</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="score-block">
+        <div class="score-head">
+          <span class="name">💡 創意性</span>
+          <span class="val" id="val-creativity">5</span>
+        </div>
+        <input type="range" id="creativity" min="0" max="10" step="1" value="5" />
+        <div class="ticks"><span>0</span><span>10</span></div>
+      </div>
+
+      <div class="score-block">
+        <div class="score-head">
+          <span class="name">🛠️ 技術性</span>
+          <span class="val" id="val-technical">5</span>
+        </div>
+        <input type="range" id="technical" min="0" max="10" step="1" value="5" />
+        <div class="ticks"><span>0</span><span>10</span></div>
+      </div>
+
+      <div class="score-block">
+        <div class="score-head">
+          <span class="name">🐞 BUG 尋找力</span>
+          <span class="val" id="val-bug">5</span>
+        </div>
+        <input type="range" id="bug" min="0" max="10" step="1" value="5" />
+        <div class="ticks"><span>0</span><span>10</span></div>
+      </div>
+
+      <div class="field">
+        <label for="comment">意見（可選填）</label>
+        <textarea id="comment" placeholder="對這位參賽者的評語或建議…"></textarea>
+      </div>
+
+      <button type="submit" id="submitBtn">送出評分</button>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* =====================================================================
+       設定區：請依實際情況修改以下三項
+       ===================================================================== */
+
+    // 1) 部署 Google Apps Script 後取得的網址（見 README.md 步驟）
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk_B3DK2UYI4IcVp93Mvdy5bYF3iF8-tLfP0dDwbXF_P7od1iBraSxEW7z1rvXHTJy4Q/exec";
+
+    // 2) 9 位參賽者名單
+    const CONTESTANTS = [
+      "參賽者 1",
+      "參賽者 2",
+      "參賽者 3",
+      "參賽者 4",
+      "參賽者 5",
+      "參賽者 6",
+      "參賽者 7",
+      "參賽者 8",
+      "參賽者 9",
+    ];
+
+    // 3) 評審名單（可自由增減）
+    const JUDGES = [
+      "評審 A",
+      "評審 B",
+      "評審 C",
+      "評審 D",
+      "評審 E",
+      "評審 F",
+      "評審 G",
+      "評審 H",
+      "評審 I",
+      "評審 J",
+    ];
+
+    /* =====================================================================
+       以下為程式邏輯，一般不需修改
+       ===================================================================== */
+
+    const $ = (id) => document.getElementById(id);
+
+    // 填入下拉選單
+    function fillSelect(el, items) {
+      items.forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        el.appendChild(opt);
+      });
+    }
+    fillSelect($("contestant"), CONTESTANTS);
+    fillSelect($("judge"), JUDGES);
+
+    // 記住評審姓名
+    const savedJudge = localStorage.getItem("judgeName");
+    if (savedJudge && JUDGES.includes(savedJudge)) $("judge").value = savedJudge;
+    $("judge").addEventListener("change", (e) => {
+      localStorage.setItem("judgeName", e.target.value);
+    });
+
+    // 滑桿即時顯示數值
+    [["creativity", "val-creativity"], ["technical", "val-technical"], ["bug", "val-bug"]]
+      .forEach(([slider, label]) => {
+        $(slider).addEventListener("input", (e) => { $(label).textContent = e.target.value; });
+      });
+
+    // Toast 提示
+    function showToast(msg, isError = false) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.className = "toast show" + (isError ? " error" : "");
+      setTimeout(() => { t.className = "toast" + (isError ? " error" : ""); }, 2800);
+    }
+
+    // 送出
+    $("scoreForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const judge = $("judge").value;
+      const contestant = $("contestant").value;
+      if (!judge || !contestant) {
+        showToast("請先選擇評審與參賽者", true);
+        return;
+      }
+
+      const payload = {
+        judge,
+        contestant,
+        creativity: Number($("creativity").value),
+        technical: Number($("technical").value),
+        bug: Number($("bug").value),
+        comment: $("comment").value.trim(),
+        timestamp: new Date().toISOString(),
+      };
+
+      const btn = $("submitBtn");
+      btn.disabled = true;
+      btn.textContent = "送出中…";
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+        showToast("✅ 已送出：" + contestant);
+        // 重設分數與意見，保留評審姓名，方便評下一位
+        ["creativity", "technical", "bug"].forEach((id) => {
+          $(id).value = 5;
+          $("val-" + (id === "bug" ? "bug" : id)).textContent = 5;
+        });
+        $("comment").value = "";
+        $("contestant").selectedIndex = 0;
+      } catch (err) {
+        showToast("❌ 送出失敗，請檢查網路後再試", true);
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "送出評分";
+      }
+    });
+  </script>
+</body>
+</html>
